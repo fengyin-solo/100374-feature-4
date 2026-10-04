@@ -18,6 +18,68 @@
       </article>
     </div>
 
+    <section class="check-block">
+      <header class="check-head">
+        <div>
+          <h3>待核对成果（流量签认后流入）</h3>
+          <p class="page-desc">已签认的流量成果先在此核对：纳入整编即进入整编成果清单；退回重核会在流量侧重开修订轮次，历史签认版本保留。</p>
+        </div>
+        <div class="check-tabs">
+          <button
+            v-for="tab in checkTabs"
+            :key="tab"
+            class="role-chip"
+            :class="{ active: checkTab === tab }"
+            type="button"
+            @click="checkTab = tab"
+          >
+            {{ tab }}（{{ checkCount(tab) }}）
+          </button>
+        </div>
+      </header>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>核对编号</th>
+            <th>流量记录</th>
+            <th>站点编号</th>
+            <th>测量方法</th>
+            <th>断面流量</th>
+            <th>过水面积</th>
+            <th>签认版本</th>
+            <th>签认人</th>
+            <th>签认时间</th>
+            <th>核对状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in filteredChecks" :key="item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.记录编号 }}</td>
+            <td>{{ item.站点编号 }}</td>
+            <td>{{ item.测量方法 }}</td>
+            <td>{{ item.断面流量 }}</td>
+            <td>{{ item.过水面积 }}</td>
+            <td>V{{ item.版本号 }}</td>
+            <td>{{ item.签认人 }}</td>
+            <td>{{ formatTime(item.签认时间) }}</td>
+            <td><span class="stage-badge" :class="checkClass(item.status)">{{ item.status }}</span></td>
+            <td class="row-actions">
+              <template v-if="item.status === '待核对'">
+                <button class="link" type="button" @click="adopt(item)">纳入整编</button>
+                <button class="link danger" type="button" @click="reject(item)">退回重核</button>
+              </template>
+              <span v-else class="muted-text">已处置</span>
+            </td>
+          </tr>
+          <tr v-if="!filteredChecks.length">
+            <td colspan="11" class="empty-state">暂无{{ checkTab }}的流量成果，签认通过后会自动流入</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <p class="status-legend">
       <span v-for="item in statusSummary" :key="item.status" class="legend-item">
         {{ item.status }}：{{ item.count }}
@@ -79,6 +141,13 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import {
+  adoptCheck,
+  listChecks,
+  rejectCheck,
+  type CompilationCheck,
+  type CheckStatus,
+} from '@/data/discharge/compilation-queue'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('compilation')
@@ -92,6 +161,57 @@ const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
+
+// 待核对成果：来自流量签认链路
+const checks = ref<CompilationCheck[]>([])
+const checkTabs: CheckStatus[] = ['待核对', '已纳入', '退回重核']
+const checkTab = ref<CheckStatus>('待核对')
+const checkOperator = ref('整编员·孙倩')
+
+const filteredChecks = computed(() =>
+  checks.value.filter((item) => item.status === checkTab.value),
+)
+
+function checkCount(tab: CheckStatus): number {
+  return checks.value.filter((item) => item.status === tab).length
+}
+
+function checkClass(status: CheckStatus): string {
+  return {
+    待核对: 'stage-locked',
+    已纳入: 'stage-signed',
+    退回重核: 'stage-returned',
+  }[status]
+}
+
+function formatTime(stamp: string): string {
+  const date = new Date(stamp)
+  if (Number.isNaN(date.getTime())) {
+    return stamp
+  }
+  return date.toLocaleString('zh-CN', { hour12: false })
+}
+
+function adopt(item: CompilationCheck) {
+  const result = adoptCheck(item.id)
+  errorMessage.value = result.ok ? '' : result.message
+  reloadChecks()
+}
+
+function reject(item: CompilationCheck) {
+  const reason = window.prompt(`退回重核原因（${item.id}）`, '整编核对发现问题，请重新复测签认')
+  if (reason === null) {
+    return
+  }
+  const result = rejectCheck(item.id, checkOperator.value, reason || '整编退回重核')
+  errorMessage.value = result.ok ? '' : result.message
+  reloadChecks()
+}
+
+function reloadChecks() {
+  checks.value = listChecks()
+}
+
 const statusSummary = computed(() =>
   statuses.map((status: string) => ({
     status,
@@ -133,5 +253,8 @@ function reload() {
   }
 }
 
-onMounted(reload)
+onMounted(() => {
+  reload()
+  reloadChecks()
+})
 </script>

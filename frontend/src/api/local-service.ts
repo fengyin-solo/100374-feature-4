@@ -1,5 +1,6 @@
 import { MODULE_BY_KEY } from '@/data/modules'
 import { allRows, listRows, resetRows, saveRows } from '@/data/local-store'
+import { listDischarge } from '@/data/discharge/store'
 import type { ActionResult, EntryRow, ModuleMeta, OverviewResult, PageResult } from '@/data/types'
 
 // 会写进数据的「往回走」动作：命中就把这条记录标成异常态，看板上能一眼看出来。
@@ -84,9 +85,26 @@ export function downloadEntries(key: string): void {
   URL.revokeObjectURL(url)
 }
 
+// 流量模块已迁到逐段签认存储：把签认状态折算成概览口径
+// （待处理 = 测量员待锁定 + 审核员待签认；异常 = 异常值）。
+function dischargeOverviewStats(): { created: number; pending: number; abnormal: number } {
+  const entries = listDischarge()
+  return {
+    created: entries.length,
+    pending: entries.filter(
+      (row) => row.stage === '草稿' || row.stage === '退回修订' || row.stage === '已锁定',
+    ).length,
+    abnormal: entries.filter((row) => row.stage === '异常值').length,
+  }
+}
+
 export function loadOverview(): OverviewResult {
   const rows = allRows()
+  const dischargeStats = dischargeOverviewStats()
   const modules = [...MODULE_BY_KEY.values()].map((meta) => {
+    if (meta.key === 'discharge') {
+      return { name: meta.name, ...dischargeStats }
+    }
     const entries = rows[meta.key] ?? []
     return {
       name: meta.name,
