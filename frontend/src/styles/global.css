@@ -35,3 +35,22 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .error-text { color: #b42318; }
 .status-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 10px; font-size: 12px; color: var(--muted); }
 .legend-item { background: #eef2f7; border-radius: 999px; padding: 2px 10px; }
+.actor-bar { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
+.actor-bar select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.actor-hint { font-size: 12px; color: var(--muted); }
+.muted { color: var(--muted); font-size: 12px; }
+.ok-text { color: #067647; }
+.signoff-panel { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-top: 14px; }
+.signoff-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.signoff-head h3 { margin: 0; font-size: 15px; }
+.signoff-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 4px; font-size: 13px; }
+.method-select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.meta-hint { margin: 0 0 10px; }
+.badge { border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+.badge.warn { background: #fef0c7; color: #b54708; }
+.reading-input { width: 110px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; margin-right: 6px; }
+.signoff-history { margin-top: 12px; }
+.signoff-history h4 { margin: 0 0 6px; font-size: 13px; }
+.pending-check { margin-bottom: 14px; }
+.pending-check .pending-title { margin: 0 0 4px; font-size: 15px; }
+.pending-check .data-table { margin-top: 8px; }

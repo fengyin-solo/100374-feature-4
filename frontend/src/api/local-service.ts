@@ -1,9 +1,27 @@
 import { MODULE_BY_KEY } from '@/data/modules'
 import { allRows, listRows, resetRows, saveRows } from '@/data/local-store'
+import { resetSignoffs } from '@/data/signoff-store'
 import type { ActionResult, EntryRow, ModuleMeta, OverviewResult, PageResult } from '@/data/types'
 
 // 会写进数据的「往回走」动作：命中就把这条记录标成异常态，看板上能一眼看出来。
-const NEGATIVE_ACTIONS = ['撤销', '作废', '拒绝', '驳回', '停用', '忽略', '下线', '回滚']
+const NEGATIVE_ACTIONS = ['撤销', '作废', '拒绝', '驳回', '停用', '忽略', '下线', '回滚', '标记异常']
+
+// 流量监测的逐段签认链路在 discharge-signoff.ts，页面仍然只从本文件取接口。
+export {
+  DISCHARGE_METHODS,
+  changeMethod,
+  confirmArea,
+  deriveRecordStatus,
+  getRecordSignoff,
+  isReviewer,
+  isSurveyor,
+  listPendingCheckResults,
+  lockSegment,
+  returnSegment,
+  signSegment,
+  updateReading,
+} from './discharge-signoff'
+export type { SignoffRequest } from './discharge-signoff'
 
 export function moduleMeta(key: string): ModuleMeta {
   const meta = MODULE_BY_KEY.get(key)
@@ -58,6 +76,10 @@ export function runAction(key: string, id: number, action: string): ActionResult
 
 export function resetModule(key: string): PageResult {
   resetRows(key)
+  if (key === 'discharge') {
+    // 流量记录与签认链路一起重置，避免记录回到初始而签认状态还留着。
+    resetSignoffs()
+  }
   return listEntries(key)
 }
 

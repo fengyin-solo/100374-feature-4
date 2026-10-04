@@ -33,6 +33,38 @@
       <button class="btn ghost" type="button" @click="resetFilters">重置条件</button>
     </form>
 
+    <section class="pending-check">
+      <h3 class="pending-title">待核对成果（流量监测）</h3>
+      <p class="page-desc">
+        测量方法已变更、过水面积尚未核对的流量成果，核对完成前不参与整编刊印；请前往「流量监测」页面的逐段签认面板完成核对。
+      </p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>记录编号</th>
+            <th>站点编号</th>
+            <th>测量方法</th>
+            <th>待核对过水面积</th>
+            <th>签认进度</th>
+            <th>记录状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in pendingChecks" :key="item.recordId">
+            <td>{{ item.记录编号 }}</td>
+            <td>{{ item.站点编号 }}</td>
+            <td>{{ item.method }}</td>
+            <td>{{ item.area }} ㎡</td>
+            <td>{{ item.signedCount }}/{{ item.segmentCount }} 段已签认</td>
+            <td>{{ item.status }}</td>
+          </tr>
+          <tr v-if="!pendingChecks.length">
+            <td colspan="6" class="empty-state">当前没有待核对成果</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <table class="data-table">
       <thead>
         <tr>
@@ -76,10 +108,11 @@ import { computed, onMounted, ref } from 'vue'
 import {
   downloadEntries,
   listEntries,
+  listPendingCheckResults,
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
-import type { EntryRow } from '@/data/types'
+import type { EntryRow, PendingCheckEntry } from '@/data/types'
 
 const meta = moduleMeta('compilation')
 const columns = ["成果编号", "整编年份", "站点编号", "整编类型", "原始记录数", "整编人", "审核人", "整编状态"]
@@ -91,6 +124,7 @@ const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
+const pendingChecks = ref<PendingCheckEntry[]>([])
 const filterFields = columns.slice(0, 3)
 const statusSummary = computed(() =>
   statuses.map((status: string) => ({
@@ -128,6 +162,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    pendingChecks.value = listPendingCheckResults()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '数据整编列表读取失败'
   }

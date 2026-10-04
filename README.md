@@ -68,4 +68,10 @@ npm run build
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
   `frontend/src/data/seed.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
+- 流量监测的审核是逐段签认：测量员先锁定原始读数，审核员再签认或退回，签认状态只能按
+  待锁定→已锁定→已签认 顺序流转（已锁定可退回，退回后重新锁定）。链路规则在
+  `frontend/src/api/discharge-signoff.ts`：并发签认按测段版本号只接受先到的签章，连续提交
+  按幂等键只认首次结果，校验全部通过才落库，失败自动回滚不留半份签认。测量方法变更后旧
+  过水面积不自动跟随，标记为待核对并在「数据整编」页列为待核对成果；历史签认版本仍按
+  签认时的方法与面积留存。签认数据存在 `hydrology-monitor-station:discharge-signoffs`。
 - 想回到初始数据：清掉浏览器里 `hydrology-monitor-station:entries` 这一项，或调用 `resetModule(模块)`。
